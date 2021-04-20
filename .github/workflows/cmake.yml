@@ -19,7 +19,7 @@ jobs:
 
     - name: Copy MSFileReader.zip
       # We need to have the Thermo MSFileReader installed for the Crux build on Windows
-      run: wget https://noble.gs.washington.edu/crux-downloads/Thermo.zip
+      run: C:\msys64\usr\bin\wget.exe https://noble.gs.washington.edu/crux-downloads/Thermo.zip
       
     - name: Expand MSFileReader.zip
       run: unzip Thermo.zip
