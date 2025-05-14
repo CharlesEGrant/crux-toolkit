@@ -12,7 +12,7 @@ jobs:
   build-macos-windows-distributions:
     strategy:
       matrix:
-        os: [macos-latest, windows-2019]
+        os: [ windows-2019]
     runs-on: ${{ matrix.os }}
 
     steps:
