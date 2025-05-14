@@ -160,46 +160,4 @@ jobs:
             name: smoke.html
             path: test/smoke-tests/smoke-tests.html
                  
-        - name: Create version file
-          shell: bash
-          run: |
-            echo ${{env.git_short_sha}} > doc/user/latest-build.txt
-            
-        - name: Push modified webpages to website repository
-          if: github.ref == 'refs/heads/master'
-          uses: nkoppel/push-files-to-another-repository@v1.1.1
-          env:
-            API_TOKEN_GITHUB: ${{ secrets.DOC_UPDATE_KEY}}
-          with:
-             source-files: 'doc/user/*'
-             destination-username: 'crux-toolkit'
-             destination-repository: 'crux-toolkit.github.io'
-             destination-directory: '.'
-             commit-email: 'cegrant@uw.edu'
-             
-        - name: Push command webpages to website repository
-          uses: dmnemec/copy_file_to_another_repo_action@main
-          env:
-             API_TOKEN_GITHUB: ${{ secrets.DOC_UPDATE_KEY }}
-          with:
-             source_file: 'doc/user/commands/'
-             destination_repo: 'crux-toolkit/crux-toolkit.github.io'
-             destination_branch: master
-             destination_folder: '.'
-             user_email: 'cegrant@uw.edu'
-             user_name: 'CharlesEGrant'
-             commit_message: 'Update version file for the web site' 
-
-        - name: Copy version file to website repository
-          uses: dmnemec/copy_file_to_another_repo_action@main
-          env:
-             API_TOKEN_GITHUB: ${{ secrets.DOC_UPDATE_KEY }}
-          with:
-             source_file: 'doc/user/latest-build.txt'
-             destination_repo: 'crux-toolkit/crux-toolkit.github.io'
-             destination_branch: master
-             destination_folder: '.'
-             user_email: 'cegrant@uw.edu'
-             user_name: 'CharlesEGrant'
-             commit_message: 'Update version file for the web site' 
-  
+      
