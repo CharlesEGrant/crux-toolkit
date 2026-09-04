@@ -107,15 +107,24 @@ jobs:
           } else {
            Write-Host "DLL registered successfully"
           }
-          cmake -G "Ninja" "${{github.workspace}}" -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+          cmake "${{github.workspace}}" -G "Visual Studio 17 2022" -A x64
 
-      - name: build
+
+      - name: build-non-windows
+        if: (matrix.os != 'windows-2022')
         shell: bash
         run: |
              cd "${{runner.workspace}}/build"
              echo Building in $(pwd)
              cmake --build . --target package
 
+      - name: build-windows
+        if: (matrix.os == 'windows-2022')
+        shell: bash
+        run: |
+             cd "${{runner.workspace}}/build"
+             echo Building in $(pwd)
+             cmake --build . --config $BUILD_TYPE 
 
       - name: build-package
         shell: bash
