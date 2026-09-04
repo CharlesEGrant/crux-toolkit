@@ -47,7 +47,7 @@ jobs:
               cmake -E make_directory "${{runner.workspace}}/build"
               cd "${{runner.workspace}}/build"
               echo Configuring in $(pwd)
-              cmake "${{github.workspace}}" -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+              cmake -G "Ninja" "${{github.workspace}}" -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
       - name: configure-build-for-macos
         if: matrix.os == 'macos-15' || matrix.os == 'macos-15-intel'
@@ -114,7 +114,8 @@ jobs:
         run: |
              cd "${{runner.workspace}}/build"
              echo Building in $(pwd)
-             cmake --build . --config $BUILD_TYPE 
+             cmake --build . --target package
+
 
       - name: build-package
         shell: bash
@@ -128,6 +129,7 @@ jobs:
         run: |
              cd "${{runner.workspace}}/build"
              cmake --build . --config $BUILD_TYPE --target package_source
+
 
       - name: archive-macos-15-package
         if: (matrix.os == 'macos-15')
