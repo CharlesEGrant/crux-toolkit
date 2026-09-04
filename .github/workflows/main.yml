@@ -58,8 +58,8 @@ jobs:
               cmake -E make_directory "${{runner.workspace}}/build"
               cd "${{runner.workspace}}/build"
               echo Configuring in $(pwd)
-              cmake "${{github.workspace}}" -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-
+              cmake -G "Ninja" "${{github.workspace}}" -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+              
       - name: configure-build-for-windows-2022
         if: matrix.os == 'windows-2022'
         shell: powershell
@@ -107,7 +107,7 @@ jobs:
           } else {
            Write-Host "DLL registered successfully"
           }
-          cmake "${{github.workspace}}" -G "Visual Studio 17 2022" -A x64
+          cmake -G "Ninja" "${{github.workspace}}" -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
       - name: build
         shell: bash
