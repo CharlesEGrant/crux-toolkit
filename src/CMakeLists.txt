@@ -21,13 +21,17 @@ add_subdirectory(app/tide)
 add_subdirectory(app/crux-lfq)
 
 if(UNIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-pie")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
 elseif(WIN32)
   # disable autolinking in boost
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif(UNIX)
+
+# Must match the rename in ext/patches/comet/CMakeLists.txt, which avoids a
+# clash between Comet's and Kojak's Threading classes.
+add_definitions(-DThreading=CometThreading)
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/src/app/bullseye)

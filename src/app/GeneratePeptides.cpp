@@ -643,7 +643,7 @@ bool GeneratePeptides::shufflePeptide(
   default:
     string originalSeq(seq);
     for (int i = 0; i < maxShuffleAttempts; i++) {
-      random_shuffle(seq.begin(), seq.end(), myrandom_limit);
+      my_random_shuffle(seq.begin(), seq.end());
       if (seq != originalSeq) {
         return true;
       }
@@ -676,7 +676,7 @@ bool GeneratePeptides::shufflePeptideIdx(
     return true;
   }
   }
-  random_shuffle(decoyIdx.begin(), decoyIdx.end(), myrandom_limit);
+  my_random_shuffle(decoyIdx.begin(), decoyIdx.end());
   return true;
 }
 

@@ -255,7 +255,7 @@ if (UNIX)
       -DCMAKE_BUILD_TYPE=${CMAKE_CFG_INTDIR}
       -Dprotobuf_BUILD_TESTS=OFF
     PATCH_COMMAND
-      # Patch to compile with c++14
+      # Patch to compile with c++20
       COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_CURRENT_SOURCE_DIR}/patches/protobuf-3.19.4/CMakeLists.txt
         ${CMAKE_CURRENT_BINARY_DIR}/build/src/protobuf-3.19.4/cmake

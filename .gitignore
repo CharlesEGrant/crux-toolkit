@@ -10,10 +10,9 @@ cmake_install.cmake
 CMakeFiles
 .ninja_deps
 .ninja_log
-build.ninja
-rules.ninja
 
 # /
+/build-ninja/
 /CPackConfig.cmake
 /CPackSourceConfig.cmake
 /Makefile

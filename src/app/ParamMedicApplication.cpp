@@ -528,7 +528,7 @@ void ErrorCalc::calcMassErrorDist(
   if (pairedPrecursorMzs.size() > MAX_PEAKPAIRS) {
     carp(CARP_INFO, "Reducing %d to %d peak pairs for precursor...",
          pairedPrecursorMzs.size(), MAX_PEAKPAIRS);
-    random_shuffle(pairedPrecursorMzs.begin(), pairedPrecursorMzs.end(), myrandom_limit);
+    my_random_shuffle(pairedPrecursorMzs.begin(), pairedPrecursorMzs.end());
     pairedPrecursorMzs.resize(MAX_PEAKPAIRS);
   }
 
@@ -603,7 +603,7 @@ void ErrorCalc::calcMassErrorDist(
     if (pairedFragmentPeaks.size() > MAX_PEAKPAIRS) {
       carp(CARP_DEBUG, "Reducing %d to %d peak pairs for fragment...",
            pairedFragmentPeaks.size(), MAX_PEAKPAIRS);
-      random_shuffle(pairedFragmentPeaks.begin(), pairedFragmentPeaks.end(), myrandom_limit);
+      my_random_shuffle(pairedFragmentPeaks.begin(), pairedFragmentPeaks.end());
       pairedFragmentPeaks.resize(MAX_PEAKPAIRS);
     }
     vector<double> fragmentDistancesTh;

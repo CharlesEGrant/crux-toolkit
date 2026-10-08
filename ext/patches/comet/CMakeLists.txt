@@ -46,13 +46,13 @@ if (ASCOREPRO_SRCS)
       target_compile_options(
         ascorepro
         PUBLIC
-        -O3 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++14 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
+        -O3 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++20 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
       )
     else()
       target_compile_options(
         ascorepro
         PUBLIC
-        -g -O0 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++14 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
+        -g -O0 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++20 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
       )
     endif()
   elseif(WIN32 AND NOT CYGWIN)
@@ -100,6 +100,12 @@ set(
   CometSearch/CometWriteSqt.cpp
   CometSearch/CometWriteTxt.cpp
   CometSearch/Threading.cpp
+  CometSearch/threading/SearchMemoryPool.cpp
+  CometSearch/search/FastaStrategy.cpp
+  CometSearch/search/FiStrategy.cpp
+  CometSearch/search/PiStrategy.cpp
+  CometSearch/search/Pipeline.cpp
+  CometSearch/search/SearchUtils.cpp
 )
 
 add_library(
@@ -107,6 +113,11 @@ add_library(
   STATIC
   ${COMETSEARCH}
 )
+
+# Comet and Kojak both define a class named Threading; rename Comet's so
+# both libraries can be linked into crux. src/CMakeLists.txt applies the
+# same rename to the Crux sources that include Comet headers.
+target_compile_definitions(cometsearch PUBLIC Threading=CometThreading)
 
 # Make sure cometsearch can find AScorePro include files and MSToolkit headers
 target_include_directories(
@@ -123,13 +134,13 @@ if (UNIX)
     target_compile_options(
       cometsearch
       PUBLIC
-      -O3 -static -std=c++14 -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MSTOOLKIT_INCLUDE_PATH} -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
+      -O3 -static -std=c++20 -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MSTOOLKIT_INCLUDE_PATH} -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
     )
   else()
     target_compile_options(
       cometsearch
       PUBLIC
-      -O0 -static -std=c++14 -g -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MSTOOLKIT_INCLUDE_PATH} -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
+      -O0 -static -std=c++20 -g -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MSTOOLKIT_INCLUDE_PATH} -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
     )
   endif ()
 elseif(WIN32 AND NOT CYGWIN)
@@ -154,7 +165,7 @@ install(TARGETS cometsearch
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CometSearch/ DESTINATION include/CometSearch FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CometSearch/ DESTINATION include/CometSearch FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
 
 # Note: AScorePro headers and static library are installed above with ascorepro target.
 # With the OUTPUT_NAME set to 'ascorepro', the installed static library on Unix will be libascorepro.a

@@ -72,7 +72,7 @@ class PinWriter : public PSMWriter {
   bool isInfinite(FLOAT_T x);
   std::string getId(Crux::Match* match, int scan_number); 
 
-  struct IsFeature : public std::unary_function<const std::pair<std::string, bool>&, bool> {
+  struct IsFeature {
     explicit IsFeature(const std::string& name): search_(name) {}
     bool operator() (const std::pair<std::string, bool>& check) {
       return search_ == check.first;

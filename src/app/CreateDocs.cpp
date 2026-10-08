@@ -393,9 +393,9 @@ void CreateDocs::makeReplacements(
     string comment = templateStr->substr(idx, end_idx - idx);
     comment.erase(comment.begin(),
                   find_if(comment.begin(), comment.end(),
-                  not1(ptr_fun<int, int>(isspace))));
+                  [](unsigned char c) { return !isspace(c); }));
     comment.erase(find_if(comment.rbegin(), comment.rend(),
-                  not1(ptr_fun<int, int>(isspace))).base(), comment.end());
+                  [](unsigned char c) { return !isspace(c); }).base(), comment.end());
     map<string, string>::const_iterator iter = replacements.find(comment);
     if (iter == replacements.end()) {
       continue;

@@ -35,7 +35,7 @@ bool SpectrumRecordWriter::convert(
   bool dia_mode  /// whether it's used in DIAmeter
 ) {
   carp(CARP_DEBUG, "Converting ms_level %d ... ", ms_level);
-  auto_ptr<Crux::SpectrumCollection> spectra(SpectrumCollectionFactory::create(infile.c_str()));
+  std::unique_ptr<Crux::SpectrumCollection> spectra(SpectrumCollectionFactory::create(infile.c_str()));
   version_date_ = getDateFromCurxVersion();
   scan_index_ = 0;
 

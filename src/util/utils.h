@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 /*#ifndef linux
 #include <ieeefp.h>
@@ -242,6 +243,24 @@ char** parse_file(
 int myrandom();
 int myrandom_limit(int max);
 void mysrandom(unsigned seed);
+
+/**
+ * Replacement for std::random_shuffle (removed in C++17) driven by
+ * myrandom_limit, so shuffles stay reproducible for a given seed.
+ * Uses the same algorithm as libstdc++'s random_shuffle.
+ */
+template <typename RandomIt>
+void my_random_shuffle(RandomIt first, RandomIt last) {
+  if (first == last) {
+    return;
+  }
+  for (RandomIt i = first + 1; i != last; ++i) {
+    RandomIt j = first + myrandom_limit((int)(i - first) + 1);
+    if (i != j) {
+      std::iter_swap(i, j);
+    }
+  }
+}
 
 #endif
 

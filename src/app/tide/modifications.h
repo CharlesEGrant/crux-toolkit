@@ -63,7 +63,7 @@ inline void ShowAll(const T& x) {
         ShowAll((x));        \
     }
 
-struct first_eq : public binary_function<pair<int, int>, pair<int, int>, bool> {
+struct first_eq {
     bool operator()(pair<int, int> x, pair<int, int> y) {
         return x.first == y.first;
     }
