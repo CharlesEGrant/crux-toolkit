@@ -1316,7 +1316,7 @@ InitStringParam("protein-name-separator", ",",
     "This parameter defines the number of mass/intensity pairs that would be queried "
     "against the fragment ion index",
     "Available for comet-index.", true);
-  InitIntParam("fragindex_skipreadprecursors", 0, 0, 1,
+  InitIntParam("fragindex_skipreadprecursors", 1, 0, 1,
     "This parameter controls whether or not Comet reads all precursors from the input files. "
     "It uses this information to limit the peptides that are included in the fragment ion index.",
     "Available for comet-index.", true);
