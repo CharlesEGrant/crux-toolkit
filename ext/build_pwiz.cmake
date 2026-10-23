@@ -60,6 +60,15 @@ else ()
   set(pwiz_build_args ${pwiz_build_args} variant=release)
 endif (${BUILD_TYPE} MATCHES "Debug")
 
+if (UNIX)
+  # GCC 14+ turns these C warnings into errors; clang and MSVC accept the hdf5-1.8.7 sources.
+  set(
+    pwiz_build_args 
+    ${pwiz_build_args}
+    "cflags=-Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion"
+  )
+endif (UNIX)
+
 set(pwiz_build_args ${pwiz_build_args} --prefix=${PREFIX})
 set(pwiz_build_args ${pwiz_build_args} address-model=64)
 set(pwiz_build_args ${pwiz_build_args} link=static)
