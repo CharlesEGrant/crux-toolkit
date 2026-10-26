@@ -46,13 +46,13 @@ if (ASCOREPRO_SRCS)
       target_compile_options(
         ascorepro
         PUBLIC
-        -O3 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++20 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
+        -O3 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++17 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
       )
     else()
       target_compile_options(
         ascorepro
         PUBLIC
-        -g -O0 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++20 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
+        -g -O0 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++17 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
       )
     endif()
   elseif(WIN32 AND NOT CYGWIN)
