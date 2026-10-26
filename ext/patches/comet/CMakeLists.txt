@@ -143,13 +143,14 @@ if (UNIX)
       -O0 -static -std=c++20 -g -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MSTOOLKIT_INCLUDE_PATH} -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
     )
   endif ()
-elseif(WIN32 AND NOT CYGWIN)
+elseif(MSVC)
   target_compile_definitions(
     cometsearch
     PUBLIC
     _CRT_SECURE_NO_WARNINGS
     CRUX
   )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /Zc:__cplusplus")
 endif(UNIX)
 
 # Link cometsearch against AScorePro if that lib was created
