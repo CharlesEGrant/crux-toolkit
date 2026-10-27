@@ -147,6 +147,7 @@ elseif(MSVC)
   target_compile_definitions(
     cometsearch
     PUBLIC
+    _HAS_STD_BYTE=0
     _CRT_SECURE_NO_WARNINGS
     CRUX
   )
