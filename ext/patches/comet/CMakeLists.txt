@@ -148,6 +148,7 @@ elseif(MSVC)
     cometsearch
     PUBLIC
     _HAS_STD_BYTE=0
+    NOMINMAX
     _CRT_SECURE_NO_WARNINGS
     CRUX
   )
