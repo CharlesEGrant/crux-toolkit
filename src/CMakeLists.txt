@@ -242,6 +242,7 @@ add_library(
   STATIC
   ${crux_lib_files}
 )
+target_compile_features(crux-support PRIVATE cxx_std_17)
 
 if(APPLE)
   set(OPENMP_FOUND FALSE)
