@@ -462,6 +462,8 @@ if (WIN32 AND NOT CYGWIN)
     tide-support
     crux-lfq-support
     mstoolkitlite
+    mstoolkitraw
+    mzimltools
     optimized libprotobuf
     debug libprotobufd
     ${PWIZ_LIBRARIES}
@@ -483,6 +485,7 @@ else()
     gflags
     bullseye
     hardklor
+    mzimltools
     mstoolkitlite
     perclibrary
     blas

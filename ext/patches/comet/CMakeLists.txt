@@ -2,15 +2,190 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW)
 project(cometsearch)
 
+# MSToolkit is built from the copy in the Comet source tree. The expat and
+# zlib archives in MSToolkit/extern are unpacked by the PATCH_COMMAND in
+# ext/CMakeLists.txt, which also copies in Crux's expat_config.h and zutil.h.
+set(MST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/MSToolkit)
+set(EXPAT_PATH ${MST_PATH}/extern/expat-2.2.9/lib)
+set(ZLIB_PATH ${MST_PATH}/extern/zlib-1.2.11)
+set(
+  MSTOOLKIT_INCLUDE_DIRS
+  ${MST_PATH}/include
+  ${EXPAT_PATH}
+  ${ZLIB_PATH}
+)
+
 # INCLUDE HEADER FILES IN SRC DIRECTORY
 include_directories(
   ${BASE_INCLUDE_PATH}
-  ${MSTOOLKIT_INCLUDE_PATH}
+  ${MSTOOLKIT_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}/CometSearch
   ${CMAKE_CURRENT_BINARY_DIR}/AScorePro/include
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+
+#############################################################################
+# Build MSToolkit static library (mstoolkitlite) from Comet's MSToolkit
+###############################################################################
+
+set(
+  EXPAT
+  ${EXPAT_PATH}/xmlparse.c
+  ${EXPAT_PATH}/xmlrole.c
+  ${EXPAT_PATH}/xmltok.c
+)
+
+set(
+  ZLIB
+  ${ZLIB_PATH}/adler32.c
+  ${ZLIB_PATH}/compress.c
+  ${ZLIB_PATH}/crc32.c
+  ${ZLIB_PATH}/deflate.c
+  ${ZLIB_PATH}/inffast.c
+  ${ZLIB_PATH}/inflate.c
+  ${ZLIB_PATH}/infback.c
+  ${ZLIB_PATH}/inftrees.c
+  ${ZLIB_PATH}/trees.c
+  ${ZLIB_PATH}/uncompr.c
+  ${ZLIB_PATH}/zutil.c
+)
+
+# RAWReader.cpp is C++/CLI and is built separately on Windows (see below)
+set(
+  MSTOOLKIT
+  ${MST_PATH}/src/MSToolkit/MSObject.cpp
+  ${MST_PATH}/src/MSToolkit/MSReader.cpp
+  ${MST_PATH}/src/MSToolkit/Spectrum.cpp
+)
+
+# mzMLReader.cpp is a stand-alone example program, so it is left out
+set(
+  MZPARSER
+  ${MST_PATH}/src/mzParser/BasicChromatogram.cpp
+  ${MST_PATH}/src/mzParser/BasicSpectrum.cpp
+  ${MST_PATH}/src/mzParser/Czran.cpp
+  ${MST_PATH}/src/mzParser/MSNumpress.cpp
+  ${MST_PATH}/src/mzParser/mz5handler.cpp
+  ${MST_PATH}/src/mzParser/mzParser.cpp
+  ${MST_PATH}/src/mzParser/mzpMz5Config.cpp
+  ${MST_PATH}/src/mzParser/mzpMz5Structs.cpp
+  ${MST_PATH}/src/mzParser/mzp_base64.cpp
+  ${MST_PATH}/src/mzParser/PWIZface.cpp
+  ${MST_PATH}/src/mzParser/RAMPface.cpp
+  ${MST_PATH}/src/mzParser/saxhandler.cpp
+  ${MST_PATH}/src/mzParser/saxmzmlhandler.cpp
+  ${MST_PATH}/src/mzParser/saxmzxmlhandler.cpp
+)
+
+add_library(
+  mstoolkitlite
+  STATIC
+  ${ZLIB}
+  ${EXPAT}
+  ${MZPARSER}
+  ${MSTOOLKIT}
+)
+
+target_include_directories(mstoolkitlite PUBLIC ${MSTOOLKIT_INCLUDE_DIRS})
+
+if (UNIX)
+  target_compile_options(mstoolkitlite PRIVATE -O3)
+  target_compile_definitions(
+    mstoolkitlite
+    PRIVATE
+    _LARGEFILE_SOURCE
+    _FILE_OFFSET_BITS=64
+    GCC
+    HAVE_EXPAT_CONFIG_H
+  )
+elseif(MSVC)
+  target_compile_definitions(
+    mstoolkitlite
+    PRIVATE
+    _CRT_SECURE_NO_WARNINGS
+    XML_STATIC
+  )
+endif(UNIX)
+
+#############################################################################
+# Build Thermo RAW file reader (Windows only)
+#
+# Comet's RAWReader.cpp reads .raw files through Thermo's RawFileReader .NET
+# assemblies, so it has to be compiled as C++/CLI (/clr). It is kept in its
+# own library so the rest of MSToolkit stays plain native code. The crux
+# executable must link both mstoolkitlite and mstoolkitraw.
+###############################################################################
+
+if (MSVC)
+  if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
+    message(
+      FATAL_ERROR
+      "Comet's Thermo RAW reader is C++/CLI and requires a Visual Studio generator."
+    )
+  endif()
+
+  # Compile against the same RawFileReader assemblies that are shipped with
+  # crux, since the CLR binds to the exact assembly version used at compile
+  # time. ProteoWizard installs them in lib/ when vendor libraries are
+  # included; otherwise use the copies from Comet's local NuGet packages.
+  set(THERMO_DLL_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+  if (NOT EXISTS ${THERMO_DLL_DIR}/ThermoFisher.CommonCore.RawFileReader.dll)
+    set(THERMO_VERSION 5.0.0.93)
+    set(THERMO_NUGET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/RealtimeSearch/ThermoNuGet)
+    set(THERMO_EXTRACT_DIR ${CMAKE_CURRENT_BINARY_DIR}/ThermoNuGet)
+    foreach(thermo_pkg Data RawFileReader)
+      file(MAKE_DIRECTORY ${THERMO_EXTRACT_DIR}/${thermo_pkg})
+      execute_process(
+        COMMAND ${CMAKE_COMMAND} -E tar xf
+          ${THERMO_NUGET_DIR}/ThermoFisher.CommonCore.${thermo_pkg}.${THERMO_VERSION}.nupkg
+        WORKING_DIRECTORY ${THERMO_EXTRACT_DIR}/${thermo_pkg}
+      )
+      install(
+        FILES ${THERMO_EXTRACT_DIR}/${thermo_pkg}/lib/netstandard2.0/ThermoFisher.CommonCore.${thermo_pkg}.dll
+        DESTINATION lib
+      )
+    endforeach()
+    set(THERMO_DATA_DLL ${THERMO_EXTRACT_DIR}/Data/lib/netstandard2.0/ThermoFisher.CommonCore.Data.dll)
+    set(THERMO_RAW_DLL ${THERMO_EXTRACT_DIR}/RawFileReader/lib/netstandard2.0/ThermoFisher.CommonCore.RawFileReader.dll)
+  else()
+    set(THERMO_DATA_DLL ${THERMO_DLL_DIR}/ThermoFisher.CommonCore.Data.dll)
+    set(THERMO_RAW_DLL ${THERMO_DLL_DIR}/ThermoFisher.CommonCore.RawFileReader.dll)
+  endif()
+
+  # /RTC run-time checks are incompatible with /clr
+  string(REGEX REPLACE "/RTC[1csu]+" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+
+  add_library(
+    mstoolkitraw
+    STATIC
+    ${MST_PATH}/src/MSToolkit/RAWReader.cpp
+  )
+  target_include_directories(mstoolkitraw PRIVATE ${MSTOOLKIT_INCLUDE_DIRS})
+  target_compile_definitions(
+    mstoolkitraw
+    PRIVATE
+    _CRT_SECURE_NO_WARNINGS
+    XML_STATIC
+  )
+  # Comet's own project found that the assembly references alone did not
+  # always produce /FU switches, so they are forced explicitly as well.
+  target_compile_options(
+    mstoolkitraw
+    PRIVATE
+    /EHa
+    "/FU${THERMO_DATA_DLL}"
+    "/FU${THERMO_RAW_DLL}"
+  )
+  set_target_properties(
+    mstoolkitraw
+    PROPERTIES
+    COMMON_LANGUAGE_RUNTIME ""
+    DOTNET_TARGET_FRAMEWORK_VERSION v4.7.2
+    VS_DOTNET_REFERENCE_ThermoFisher.CommonCore.Data ${THERMO_DATA_DLL}
+    VS_DOTNET_REFERENCE_ThermoFisher.CommonCore.RawFileReader ${THERMO_RAW_DLL}
+  )
+endif(MSVC)
 
 #############################################################################
 # Build AScorePro static library (headers in AScorePro/include, sources in AScorePro/)
@@ -126,7 +301,7 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/CometSearch
     ${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
     ${CMAKE_CURRENT_BINARY_DIR}/AScorePro/include
-    ${MSTOOLKIT_INCLUDE_PATH}
+    ${MSTOOLKIT_INCLUDE_DIRS}
 )
 
 if (UNIX)
@@ -134,13 +309,13 @@ if (UNIX)
     target_compile_options(
       cometsearch
       PUBLIC
-      -O3 -static -std=c++20 -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MSTOOLKIT_INCLUDE_PATH} -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
+      -O3 -static -std=c++20 -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MST_PATH}/include -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
     )
   else()
     target_compile_options(
       cometsearch
       PUBLIC
-      -O0 -static -std=c++20 -g -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MSTOOLKIT_INCLUDE_PATH} -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
+      -O0 -static -std=c++20 -g -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MST_PATH}/include -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
     )
   endif ()
 elseif(MSVC)
@@ -160,6 +335,11 @@ if (TARGET ascorepro)
   target_link_libraries(cometsearch PUBLIC ascorepro)
 endif()
 
+target_link_libraries(cometsearch PUBLIC mstoolkitlite)
+if (TARGET mstoolkitraw)
+  target_link_libraries(cometsearch PUBLIC mstoolkitraw)
+endif()
+
 ################################################################################
 
 # INSTALL cometsearch library and headers
@@ -167,6 +347,30 @@ install(TARGETS cometsearch
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
+)
+
+# INSTALL MSToolkit libraries and headers. Crux, Kojak, Hardklor and the other
+# tools expect the MSToolkit, expat and zlib headers in include/MSToolkit.
+install(TARGETS mstoolkitlite
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+if (TARGET mstoolkitraw)
+  install(TARGETS mstoolkitraw
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+  )
+endif()
+install(DIRECTORY ${MST_PATH}/include/ DESTINATION include/MSToolkit FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp" PATTERN "extern" EXCLUDE)
+install(
+  FILES
+    ${EXPAT_PATH}/expat.h
+    ${EXPAT_PATH}/expat_external.h
+    ${ZLIB_PATH}/zlib.h
+    ${ZLIB_PATH}/zconf.h
+  DESTINATION include/MSToolkit
 )
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CometSearch/ DESTINATION include/CometSearch FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
 

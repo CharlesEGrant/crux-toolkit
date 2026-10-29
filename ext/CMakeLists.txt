@@ -48,11 +48,14 @@ else (USE_LATEST_PWIZ)
 endif (USE_LATEST_PWIZ)
 
 # MSToolkit
-# Get MSToolkit source from Github
+# The MSToolkit used by crux is now built from the copy in the Comet source
+# tree (see Comet below). Comet's copy doesn't include the mzIdentML tools or
+# the pepXML writer that Kojak needs, so get those from the stand-alone
+# MSToolkit source on Github and build them into the mzimltools library.
 ExternalProject_Add(
   MSToolkit
   GIT_REPOSITORY https://github.com/mhoopmann/mstoolkit.git
-  GIT_TAG 20e99ce
+  GIT_TAG rev85
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/build
   CMAKE_ARGS ${TOOLCHAIN_FILE}
     -DCMAKE_VERBOSE_MAKEFILE=ON
@@ -60,19 +63,9 @@ ExternalProject_Add(
     -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}
     -DCMAKE_BUILD_TYPE=${CMAKE_CFG_INTDIR}
   PATCH_COMMAND
-    COMMAND
-      unzip -o src/zlib1211.zip -d src
-    COMMAND
-      tar xvf src/expat-2.2.9.tar.gz -C src
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${CMAKE_CURRENT_SOURCE_DIR}/patches/MSToolkit/zlib/zutil.h
-      ${CMAKE_CURRENT_BINARY_DIR}/build/src/MSToolkit/src/zlib-1.2.11
     COMMAND ${CMAKE_COMMAND} -E copy
       ${CMAKE_CURRENT_SOURCE_DIR}/patches/MSToolkit/CMakeLists.txt
       ${CMAKE_CURRENT_BINARY_DIR}/build/src/MSToolkit/
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${CMAKE_CURRENT_SOURCE_DIR}/patches/MSToolkit/src/RAMPface.cpp
-      ${CMAKE_CURRENT_BINARY_DIR}/build/src/MSToolkit/src/mzParser/RAMPface.cpp
   BUILD_IN_SOURCE 1
 )
 
@@ -320,11 +313,22 @@ ExternalProject_Add(
     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}
     -DCMAKE_PREFIX_PATH=${CMAKE_CURRENT_BINARY_DIR}
     -DCMAKE_BUILD_TYPE=${CMAKE_CFG_INTDIR}
-    PATCH_COMMAND
-      COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_CURRENT_SOURCE_DIR}/patches/comet/CMakeLists.txt
-        ${CMAKE_CURRENT_BINARY_DIR}/build/src/comet/
-    BUILD_IN_SOURCE 1
+  PATCH_COMMAND
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${CMAKE_CURRENT_SOURCE_DIR}/patches/comet/CMakeLists.txt
+      ${CMAKE_CURRENT_BINARY_DIR}/build/src/comet/
+    # Unpack expat and zlib for Comet's copy of MSToolkit
+    COMMAND ${CMAKE_COMMAND} -E chdir MSToolkit/extern
+      ${CMAKE_COMMAND} -E tar xf expat-2.2.9.zip
+    COMMAND ${CMAKE_COMMAND} -E chdir MSToolkit/extern
+      ${CMAKE_COMMAND} -E tar xf zlib1211.zip
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${CMAKE_CURRENT_SOURCE_DIR}/patches/comet/MSToolkit/zutil.h
+      ${CMAKE_CURRENT_BINARY_DIR}/build/src/comet/MSToolkit/extern/zlib-1.2.11/
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${CMAKE_CURRENT_SOURCE_DIR}/patches/comet/MSToolkit/expat_config.h
+      ${CMAKE_CURRENT_BINARY_DIR}/build/src/comet/MSToolkit/include/
+  BUILD_IN_SOURCE 1
 )
 
 # NeoPepXMLParser 
@@ -455,4 +459,13 @@ if (WIN32 AND NOT CYGWIN AND INCLUDE_VENDOR_LIBRARIES)
     )
   endif (CMAKE_GENERATOR MATCHES "^.*Win64$")
   install (FILES ${vendor_binaries} DESTINATION bin)
+elseif (WIN32 AND NOT CYGWIN)
+  # Comet's Thermo RAW reader needs the RawFileReader assemblies, which the
+  # Comet build puts in lib when they don't come from the vendor libraries.
+  install (
+    FILES
+      ${CMAKE_CURRENT_BINARY_DIR}/lib/ThermoFisher.CommonCore.Data.dll
+      ${CMAKE_CURRENT_BINARY_DIR}/lib/ThermoFisher.CommonCore.RawFileReader.dll
+    DESTINATION bin
+  )
 endif (WIN32 AND NOT CYGWIN AND INCLUDE_VENDOR_LIBRARIES)

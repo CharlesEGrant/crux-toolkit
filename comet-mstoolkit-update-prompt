@@ -1,0 +1,9 @@
+Crux is a set of tools for mass spec spectrum to peptide identification.
+It is written primarily in C and uses CMake for the build system. It depends on multiple external tools for which source is downloaded from git repositories and built using the cmake ExternalProject_Add command.
+
+In particular we pull and build MSToolkit and Comet. Both of these use Makefiles for their build but we have created CMakeLists.txt files to build them in order to avoid having multiple top level build systems. These CMakeLists.txt files are in ext/patches/comet and ext/patches/MSToolkit and are added to the source after pulling the original source from git.
+
+Comet and MSToolkit in turn contain supporting software. In the case of Comet we have really only needed the files under CometSearch and AScorePro
+and our CMakeLists.txt file builds a library using only those files. The current version of Comet now contains it's own version of MSToolkit which contains the Thermo MSRawReader library.
+
+We would now like build crux using the current version of Comet and it's version of MSToolkit. I have already commented out commands to build the separate MSToolkit. Please update the ext/patch/Comet/CMakeLists.txt file to build the MSToolkit version included in the Comet source tree.

@@ -1,48 +1,23 @@
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW)
 project(mstoolkit)
-# INCLUDE HEADER FILES IN SRC DIRECTORY
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 #############################################################################
-# COMPILE MSToolkit
+# COMPILE mzimltools
+#
+# Crux builds MSToolkit itself from the copy in the Comet source tree. That
+# copy doesn't include the mzIdentML tools or the pepXML writer used by Kojak,
+# so only those are built here, into the mzimltools library. They use the
+# expat headers from this source tree, but link against the expat built into
+# Comet's mstoolkitlite (same expat version).
 ###############################################################################
 
 set(EXPAT_PATH ./src/expat-2.2.9/lib)
 set(MST_PATH ./src/MSToolkit)
 set(MZIMLTOOLS_PATH ./src/mzIMLTools)
-set(MZPARSER_PATH ./src/mzParser)
-set(ZLIB_PATH ./src/zlib-1.2.11)
-set(EXPAT_WITH_GETRANDOM OFF)
-set(EXPAT_WITH_SYS_GETRANDOM OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
 
-set(
-  EXPAT 
-  ${EXPAT_PATH}/xmlparse.c 
-  ${EXPAT_PATH}/xmlrole.c 
-  ${EXPAT_PATH}/xmltok.c
-)
-if (WIN32 AND NOT Cygwin)
-  set(
-    MSTOOLKIT 
-    ${MST_PATH}/MSObject.cpp 
-    ${MST_PATH}/MSReader.cpp 
-    ${MST_PATH}/mzMLWriter.cpp 
-    ${MST_PATH}/pepXMLWriter.cpp
-    ${MST_PATH}/RAWReader.cpp 
-    ${MST_PATH}/Spectrum.cpp 
-  )
-else (WIN32 AND NOT Cygwin)
-  set(
-    MSTOOLKIT 
-    ${MST_PATH}/MSObject.cpp 
-    ${MST_PATH}/MSReader.cpp 
-    ${MST_PATH}/mzMLWriter.cpp 
-    ${MST_PATH}/pepXMLWriter.cpp
-    ${MST_PATH}/Spectrum.cpp 
-  )
-endif (WIN32 AND NOT Cygwin)
+include_directories(./include ${EXPAT_PATH})
 
 set(
   MZIMLTOOLS
@@ -118,67 +93,41 @@ set(
   ${MZIMLTOOLS_PATH}/CSubSample.cpp 
   ${MZIMLTOOLS_PATH}/CThreshold.cpp
 )
-set(
-  MZPARSERLITE
-  ${MZPARSER_PATH}/MSNumpress.cpp 
-  ${MZPARSER_PATH}/mzp_base64.cpp 
-  ${MZPARSER_PATH}/BasicSpectrum.cpp 
-  ${MZPARSER_PATH}/mzParser.cpp 
-  ${MZPARSER_PATH}/RAMPface.cpp 
-  ${MZPARSER_PATH}/saxhandler.cpp 
-  ${MZPARSER_PATH}/saxmzmlhandler.cpp
-  ${MZPARSER_PATH}/saxmzxmlhandler.cpp 
-  ${MZPARSER_PATH}/Czran.cpp 
-  ${MZPARSER_PATH}/mz5handler.cpp 
-  ${MZPARSER_PATH}/mzpMz5Config.cpp 
-  ${MZPARSER_PATH}/mzpMz5Structs.cpp 
-  ${MZPARSER_PATH}/BasicChromatogram.cpp 
-  ${MZPARSER_PATH}/PWIZface.cpp
-)
-set(
-  ZLIB 
-  ${ZLIB_PATH}/adler32.c 
-  ${ZLIB_PATH}/compress.c 
-  ${ZLIB_PATH}/crc32.c
-  ${ZLIB_PATH}/deflate.c 
-  ${ZLIB_PATH}/inffast.c 
-  ${ZLIB_PATH}/inflate.c
-  ${ZLIB_PATH}/infback.c 
-  ${ZLIB_PATH}/inftrees.c 
-  ${ZLIB_PATH}/trees.c
-  ${ZLIB_PATH}/uncompr.c 
-  ${ZLIB_PATH}/zutil.c
-)
+
 add_library(
-  mstoolkitlite 
-  STATIC 
-  ${ZLIB} 
-  ${EXPAT} 
-  ${MZIMLTOOLS} 
-  ${MZPARSERLITE}
-  ${MSTOOLKIT}
+  mzimltools
+  STATIC
+  ${MZIMLTOOLS}
+  ${MST_PATH}/pepXMLWriter.cpp
 )
-								  
+
 if (UNIX)
   target_compile_options(
-    mstoolkitlite
-    PUBLIC
-    -O3 -static -I. -I$(HEADER_PATH) -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC
-    -D_NOSQLITE -DXML_POOR_ENTROPY
+    mzimltools
+    PRIVATE
+    -O3 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC
   )
 elseif(WIN32 AND NOT CYGWIN)
   target_compile_definitions(
-    mstoolkitlite
-    PUBLIC
+    mzimltools
+    PRIVATE
     _CRT_SECURE_NO_WARNINGS
   )
 endif(UNIX)
-  
 
 ################################################################################
-								  
-# INSTALL MSTOOLKIT
-install(TARGETS mstoolkitlite EXPORT mstoolkitlite DESTINATION lib)
-install(DIRECTORY include/ DESTINATION include/MSToolkit FILES_MATCHING PATTERN "*") 
 
-
+# INSTALL mzimltools. Only the mzIdentML and pepXML headers are installed so
+# they don't replace the MSToolkit headers installed by the Comet build.
+install(TARGETS mzimltools DESTINATION lib)
+install(
+  DIRECTORY include/
+  DESTINATION include/MSToolkit
+  FILES_MATCHING
+    PATTERN "C*.h"
+    PATTERN "mzIMLStructs.h"
+    PATTERN "mzIMLTools.h"
+    PATTERN "pepXMLWriter.h"
+    # zlib header, matched by "C*.h" on case-insensitive file systems
+    PATTERN "crc32.h" EXCLUDE
+)
