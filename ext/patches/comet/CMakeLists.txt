@@ -319,6 +319,7 @@ if (UNIX)
     )
   endif ()
 elseif(MSVC)
+  target_compile_features(cometsearch PUBLIC cxx_std_17)
   target_compile_definitions(
     cometsearch
     PUBLIC
@@ -327,7 +328,7 @@ elseif(MSVC)
     _CRT_SECURE_NO_WARNINGS
     CRUX
   )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /Zc:__cplusplus")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
 endif(UNIX)
 
 # Link cometsearch against AScorePro if that lib was created
