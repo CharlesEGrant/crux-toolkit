@@ -25,6 +25,16 @@ include_directories(
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
 
+# Build AScorePro and CometSearch as C++17 (MSToolkit is C++11, below). The
+# Crux sources that include Comet's headers use the same standard (see
+# src/CMakeLists.txt).
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if (MSVC)
+  # Make __cplusplus report the real standard; BS_thread_pool.hpp checks it
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus")
+endif()
+
 #############################################################################
 # Build MSToolkit static library (mstoolkitlite) from Comet's MSToolkit
 ###############################################################################
@@ -88,6 +98,10 @@ add_library(
 )
 
 target_include_directories(mstoolkitlite PUBLIC ${MSTOOLKIT_INCLUDE_DIRS})
+
+# MSToolkit is older code that still uses the 'register' keyword, which
+# C++17 removed. Build it as C++11, as Comet's own MSToolkit Makefile does.
+set_target_properties(mstoolkitlite PROPERTIES CXX_STANDARD 11)
 
 if (UNIX)
   target_compile_options(mstoolkitlite PRIVATE -O3)
@@ -221,13 +235,13 @@ if (ASCOREPRO_SRCS)
       target_compile_options(
         ascorepro
         PUBLIC
-        -O3 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++17 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
+        -O3 -fpermissive -Wall -Wextra -Wno-write-strings -static -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
       )
     else()
       target_compile_options(
         ascorepro
         PUBLIC
-        -g -O0 -fpermissive -Wall -Wextra -Wno-write-strings -static -std=c++17 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
+        -g -O0 -fpermissive -Wall -Wextra -Wno-write-strings -static -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -DCRUX -I.
       )
     endif()
   elseif(WIN32 AND NOT CYGWIN)
@@ -309,13 +323,13 @@ if (UNIX)
     target_compile_options(
       cometsearch
       PUBLIC
-      -O3 -static -std=c++20 -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MST_PATH}/include -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
+      -O3 -static -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MST_PATH}/include -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
     )
   else()
     target_compile_options(
       cometsearch
       PUBLIC
-      -O0 -static -std=c++20 -g -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MST_PATH}/include -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
+      -O0 -static -g -fpermissive -Wall -Wextra -Wno-write-strings -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DGCC -D_NOSQLITE -D__int64=off64_t -I. -I${MST_PATH}/include -I${CMAKE_CURRENT_SOURCE_DIR}/AScorePro/include
     )
   endif ()
 elseif(MSVC)
@@ -327,7 +341,6 @@ elseif(MSVC)
     _CRT_SECURE_NO_WARNINGS
     CRUX
   )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /Zc:__cplusplus")
 endif(UNIX)
 
 # Link cometsearch against AScorePro if that lib was created

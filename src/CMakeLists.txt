@@ -27,6 +27,10 @@ if(UNIX)
 elseif(WIN32)
   # disable autolinking in boost
   add_definitions(-DBOOST_ALL_NO_LIB)
+  # Comet's headers (e.g. BS_thread_pool.hpp) require C++17. As in the Comet
+  # build, keep std::byte from clashing with the Windows SDK byte typedef.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /Zc:__cplusplus")
+  add_definitions(-D_HAS_STD_BYTE=0)
 endif(UNIX)
 
 # Must match the rename in ext/patches/comet/CMakeLists.txt, which avoids a
